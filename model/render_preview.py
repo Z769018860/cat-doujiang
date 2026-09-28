@@ -61,7 +61,10 @@ for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
         step = 1 if source.stem.endswith(('continuous', 'textured')) else max(1, len(faces) // 1800)
         faces = faces[::step]
         tris = xyz[faces]
-        normal = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+        if 'NORMAL' in primitive['attributes']:
+            normal = read(primitive['attributes']['NORMAL'])[faces].mean(axis=1)
+        else:
+            normal = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
         normal /= np.maximum(np.linalg.norm(normal, axis=1)[:, None], 1e-8)
         # Broad ambient fill keeps white fur legible on the face and chest.
         light = np.clip(0.73 + 0.27*(normal @ np.array([-0.4, -0.5, 0.76])), 0.55, 1.0)

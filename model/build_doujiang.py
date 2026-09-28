@@ -164,10 +164,30 @@ def glb(output, texture_path=None):
         bounds = ([min(p[k] for p in positions) for k in range(3)],
                   [max(p[k] for p in positions) for k in range(3)])
         pos = accessor(struct.pack('<%sf' % len(pos_flat), *pos_flat), 5126, 'VEC3', len(positions), 34962, bounds)
+        # glTF viewers require explicit vertex normals for smooth shading;
+        # omit them and the continuous sculpt looks faceted at every triangle.
+        sums = [[0.0, 0.0, 0.0] for _ in positions]
+        for j in range(0, len(indices), 3):
+            a, b, c = indices[j:j+3]
+            p, q, r = positions[a], positions[b], positions[c]
+            ab = (q[0]-p[0], q[1]-p[1], q[2]-p[2])
+            ac = (r[0]-p[0], r[1]-p[1], r[2]-p[2])
+            cross = (ab[1]*ac[2]-ab[2]*ac[1],
+                     ab[2]*ac[0]-ab[0]*ac[2],
+                     ab[0]*ac[1]-ab[1]*ac[0])
+            for i in (a, b, c):
+                for k in range(3):
+                    sums[i][k] += cross[k]
+        normals = []
+        for v in sums:
+            length = math.sqrt(sum(c*c for c in v)) or 1.0
+            normals.extend(c/length for c in v)
+        norm = accessor(struct.pack('<%sf' % len(normals), *normals),
+                        5126, 'VEC3', len(positions), 34962)
         col = accessor(bytes(round(max(0, min(1, c)) * 255) for c in color_flat),
                        5121, 'VEC4', len(colors), 34962, normalized=True)
         idx = accessor(struct.pack('<%sH' % len(indices), *indices), 5123, 'SCALAR', len(indices), 34963)
-        attributes = {'POSITION': pos, 'COLOR_0': col}
+        attributes = {'POSITION': pos, 'NORMAL': norm, 'COLOR_0': col}
         if textured:
             # Two editable atlas halves, one per photographed side. glTF UV V
             # runs upward, whereas PNG scanlines run downward.
