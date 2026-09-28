@@ -40,3 +40,5 @@
 - 生成顺序：`python model/build_continuous.py`，再运行 `python model/build_texture.py`。后者需要 Pillow、numpy 和 scikit-image；`render_preview.py model/doujiang_textured.glb` 需 matplotlib。
 
 纹理是根据照片中可辨认斑块重绘的基底，**不是照片本身投影，也不是写实皮毛材质**。为了保持正面白鼻梁，头部仍由顶点颜色控制；身体顶部沿左右纹理分区的接缝、肩斑弧度和纹理分辨率都需要后续 UV 重展开及手工修整。照片未覆盖的另一侧细纹不能凭空确认。
+
+2026-09-28 外形校正：对照站立侧照和近景正面照，增厚胸腹与臀部、加宽头部、缩短耳尖，并让四肢更粗短。`doujiang_continuous.glb` 与贴图版 `doujiang_textured.glb` 已同步重建。三视角检查中整体仍明显偏卡通，鼻眼结构、毛流及透视匹配均需人工雕刻校正；现有照片并不是同姿态正交摄影，不能从中获得精确体尺或自动完成写实重建。
