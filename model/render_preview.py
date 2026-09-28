@@ -1,6 +1,7 @@
 """Render the generated GLB as a two-view inspection sheet (requires numpy/matplotlib)."""
 import json
 import struct
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -10,7 +11,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 
 folder = Path(__file__).parent
-blob = (folder / 'doujiang_blockout.glb').read_bytes()
+source = Path(sys.argv[1]) if len(sys.argv) > 1 else folder / 'doujiang_continuous.glb'
+blob = source.read_bytes()
 length = struct.unpack_from('<I', blob, 12)[0]
 doc = json.loads(blob[20:20 + length])
 binary = blob[28 + length:]
@@ -29,10 +31,11 @@ def read(index):
     return values.astype('f4') / 255 if a.get('normalized') else values
 
 
-fig = plt.figure(figsize=(13, 6), facecolor='#f3f0e9')
-for slot, (label, elevation, azimuth) in enumerate((('Three-quarter view', 19, -124),
+fig = plt.figure(figsize=(17, 6), facecolor='#f3f0e9')
+for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
+                                                      ('Side', 15, -90),
                                                       ('Back and tail', 67, -94)), 1):
-    ax = fig.add_subplot(1, 2, slot, projection='3d')
+    ax = fig.add_subplot(1, 3, slot, projection='3d')
     ax.set_facecolor('#f3f0e9')
     for mesh in doc['meshes']:
         primitive = mesh['primitives'][0]
@@ -40,7 +43,7 @@ for slot, (label, elevation, azimuth) in enumerate((('Three-quarter view', 19, -
         colors = read(primitive['attributes']['COLOR_0'])[:, :3]
         faces = read(primitive['indices']).reshape(-1, 3)
         # Subsample for a compact, repeatable inspection render.
-        step = max(1, len(faces) // 1800)
+        step = 1 if source.stem.endswith('continuous') else max(1, len(faces) // 1800)
         faces = faces[::step]
         tris = xyz[faces]
         normal = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
@@ -54,8 +57,9 @@ for slot, (label, elevation, azimuth) in enumerate((('Three-quarter view', 19, -
     ax.view_init(elev=elevation, azim=azimuth)
     ax.set_axis_off()
     ax.set_title(label, fontsize=17, pad=0)
-fig.suptitle('Doujiang | 3D model study', fontsize=19)
-fig.text(0.5, 0.035, 'Geometry preview | photographic coat, groom, rig and animation are future work',
+fig.suptitle('Doujiang | continuous 3D surface', fontsize=19)
+fig.text(0.5, 0.035, 'Continuous sculptable mesh | coat and facial detail still need manual refinement',
          ha='center', color='#746f68', fontsize=11)
-fig.savefig(folder / 'doujiang_preview.png', dpi=155, facecolor=fig.get_facecolor())
-print(folder / 'doujiang_preview.png')
+destination = folder / ('doujiang_continuous_preview.png' if source.stem.endswith('continuous') else 'doujiang_preview.png')
+fig.savefig(destination, dpi=155, facecolor=fig.get_facecolor())
+print(destination)
