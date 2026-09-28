@@ -21,11 +21,12 @@ accessors = doc['accessors']
 def read(index):
     a = accessors[index]
     view = views[a['bufferView']]
-    dtype = {5126: '<f4', 5125: '<u4'}[a['componentType']]
+    dtype = {5126: '<f4', 5125: '<u4', 5123: '<u2', 5121: 'u1'}[a['componentType']]
     width = {'VEC3': 3, 'VEC4': 4, 'SCALAR': 1}[a['type']]
     start = view.get('byteOffset', 0) + a.get('byteOffset', 0)
-    return np.frombuffer(binary, dtype=dtype, count=a['count'] * width,
-                         offset=start).reshape(-1, width)
+    values = np.frombuffer(binary, dtype=dtype, count=a['count'] * width,
+                           offset=start).reshape(-1, width)
+    return values.astype('f4') / 255 if a.get('normalized') else values
 
 
 fig = plt.figure(figsize=(13, 6), facecolor='#f3f0e9')
