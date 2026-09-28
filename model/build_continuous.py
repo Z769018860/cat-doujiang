@@ -101,28 +101,29 @@ def coat(p):
 
     # Shoulder island: a tapered oval, descending towards the visible outer
     # foreleg. The curved white collar behind it separates it from the saddle.
-    shoulder_cx = -0.49 + 0.028*np.sin(9*zz + 5*yy)
-    shoulder_cz = 0.995 - 0.040*np.sin(8*xx)
-    shoulder_distance = ((xx-shoulder_cx)/0.175)**2 + ((zz-shoulder_cz)/0.225)**2
-    shoulder = 1-smooth(0.70, 1.08, shoulder_distance)
-    shoulder *= smooth(0.10, 0.175, abs(yy))
+    # The dark shoulder is a separate side patch, terminating above the
+    # white foreleg. Its upper edge wraps over the shoulder in the top photo.
+    shoulder_cx = -0.42 + 0.025*np.sin(8*zz + 3*yy)
+    shoulder_cz = 0.995 - 0.025*np.sin(8*xx)
+    shoulder_distance = ((xx-shoulder_cx)/0.155)**2 + ((zz-shoulder_cz)/0.196)**2
+    shoulder = 1-smooth(0.72, 1.13, shoulder_distance)
+    shoulder *= smooth(0.065, 0.15, abs(yy))
 
     # Main saddle observed in the side views: starts after the collar, curves
     # across the shoulder and bulges lower in the middle, then climbs back to
     # leave a broad white hindquarter. It is not a rectangular x/z threshold.
-    front = -0.205 + 0.037*np.sin(9*zz + 2*yy)
-    rear = 0.59
-    rear -= 0.11*(1-smooth(0.67, 0.91, zz))
-    lower = 0.73 - 0.075*np.exp(-((xx-0.16)/0.32)**2)
-    lower += 0.10*smooth(0.39, 0.66, xx)
-    lower += 0.018*np.sin(17*xx+7*yy)
+    front = -0.135 + 0.045*np.sin(8*zz + 2*yy)
+    rear = 0.60 - 0.13*(1-smooth(0.69, 0.94, zz))
+    lower = 0.69 - 0.025*np.exp(-((xx-0.18)/0.28)**2)
+    lower += 0.16*smooth(0.36, 0.62, xx)
+    lower += 0.014*np.sin(17*xx+7*yy)
     saddle = smooth(front-0.035, front+0.045, xx)
     saddle *= 1-smooth(rear-0.06, rear+0.06, xx)
     saddle *= smooth(lower-0.035, lower+0.055, zz)
     saddle = max(saddle, shoulder)
     wave = np.sin(36*xx + 6*yy + 4*zz + 0.8*np.sin(9*xx))
-    stripe = smooth(0.43, 0.82, wave)
-    fur = tabby*(1-0.28*stripe) + shadow*(0.28*stripe)
+    stripe = smooth(0.42, 0.87, wave)
+    fur = tabby*(1-0.21*stripe) + shadow*(0.21*stripe)
     # Reduced broad striping on the shoulder patch, stronger on torso.
     return tuple(white*(1-saddle) + fur*saddle)
 
@@ -132,18 +133,21 @@ base.meshes.append(('continuous_body_head_legs_tail_ears',
                     faces.astype('int32').flatten().tolist()))
 
 # Separate surfaces intentionally retained for the eyes, nose and fine whiskers.
-base.ellipsoid('nose', (-1.035, 0, 1.028), (0.026, 0.035, 0.022), base.PINK,
+base.ellipsoid('nose', (-1.035, 0, 1.028), (0.019, 0.027, 0.016), base.PINK,
                rings=10, sides=18)
 for sign, side in ((1, 'left'), (-1, 'right')):
     sy = sign * 0.110
     for suffix, cx, scale, color in (
-        ('rim', -0.987, (0.058, 0.038, 0.034), base.DARK),
-        ('iris', -1.040, (0.012, 0.028, 0.027), base.GREEN),
-        ('pupil', -1.051, (0.006, 0.010, 0.023), base.DARK),
-        ('glint', -1.057, (0.003, 0.005, 0.005), base.WHITE),
+        ('rim', -1.015, (0.023, 0.037, 0.028), base.DARK),
+        ('iris', -1.034, (0.009, 0.029, 0.023), base.GREEN),
+        ('pupil', -1.043, (0.005, 0.011, 0.020), base.DARK),
+        ('glint', -1.048, (0.002, 0.004, 0.004), base.WHITE),
     ):
         base.ellipsoid(side+'_'+suffix, (cx, sy, 1.13), scale, color,
                        rings=10, sides=18)
+    base.ellipsoid(side+'_inner_ear', (-0.824, sign*0.177, 1.274),
+                   (0.014, 0.037, 0.051), (0.43, 0.29, 0.29),
+                   rings=10, sides=18)
     for i in range(3):
         base.tapered_segment(side+'_whisker_'+str(i),
                              (-0.986, sign*0.08, 1.020+i*0.015),
