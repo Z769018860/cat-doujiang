@@ -17,3 +17,5 @@
 当前推荐查看 [`model/doujiang_textured.glb`](model/doujiang_textured.glb) 和[三视角预览](model/doujiang_textured_preview.png)。`model/build_continuous.py` 生成连续的身体、头、耳、腿及尾巴，独立保留眼睛、鼻子、触须与稀疏的短毛束；`model/build_texture.py` 生成 512×512 可编辑的左右毛色图集，并把它嵌入 GLB。运行方式：`python model/build_texture.py`，然后 `python model/render_preview.py model/doujiang_textured.glb`。依赖 numpy、scikit-image、Pillow 和 matplotlib（仅预览）。
 
 按照片调整了圆润脸颊、分开的口鼻与下巴，收窄突出眼部，修正肩部独立深色斑块、其后方白色间隔及背部虎斑位置。短毛由单独网格表达，可在小尺寸桌宠中隐藏。**此版仍是手工近似，不是照片扫描的写实资产**：面部器官、毛流和被遮挡的一侧都需要在 Blender 中逐面雕刻与贴图；模型尚未拓扑优化、绑定骨骼或制作动作。上文的“当前精度与下一步”描述的是旧版 blockout，勿将它当作现版结构。
+
+头脸继续按正面照片调整：额头白斑逐渐收窄，虎斑额纹分叉；眼睛改为较扁的杏仁形并单独增加上眼睑，补上鼻下中线和口角、调整耳内位置。三视角预览使用较均匀的补光，以免白色胸毛被预览程序压暗；这只改变示意图的显示，不改变 GLB 毛色材质。

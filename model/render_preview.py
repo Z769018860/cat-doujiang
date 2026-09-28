@@ -63,7 +63,8 @@ for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
         tris = xyz[faces]
         normal = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
         normal /= np.maximum(np.linalg.norm(normal, axis=1)[:, None], 1e-8)
-        light = np.clip((normal @ np.array([-0.4, -0.5, 0.76]) + 0.6) * 0.5, 0.38, 1.0)
+        # Broad ambient fill keeps white fur legible on the face and chest.
+        light = np.clip(0.73 + 0.27*(normal @ np.array([-0.4, -0.5, 0.76])), 0.55, 1.0)
         rgb = np.clip(colors[faces].mean(axis=1) * light[:, None], 0, 1)
         ax.add_collection3d(Poly3DCollection(tris, facecolors=rgb, linewidths=0,
                                               edgecolors='none', zsort='average'))

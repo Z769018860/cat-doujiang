@@ -95,11 +95,16 @@ def coat(p):
 
     # White muzzle, broad lower cheeks and the narrow central white blaze.
     if xx < -0.69:
-        blaze = 1 - smooth(0.052, 0.095, abs(yy) + 0.05*(zz-1.12))
+        blaze_width = 0.077 - 0.034*smooth(1.12, 1.27, zz)
+        blaze_width += 0.007*np.sin(32*zz + 18*yy)
+        blaze = 1 - smooth(blaze_width-0.015, blaze_width+0.012, abs(yy))
         cheek = 1 - smooth(1.075, 1.14, zz + 0.018*np.sin(30*yy))
         white_mix = max(blaze, cheek)
-        forehead_stripe = 0.5 + 0.5*np.cos(57*yy + 9*xx)
-        fur = tabby*(1-0.42*forehead_stripe) + shadow*(0.42*forehead_stripe)
+        # Narrow longitudinal marks split around the blaze, visible in the
+        # head-on reference; avoid a single uniformly dark cap.
+        forehead_stripe = smooth(0.66, 0.98,
+                                 np.cos(87*yy + 8*xx + 5*(zz-1.15)))
+        fur = tabby*(1-0.55*forehead_stripe) + shadow*(0.55*forehead_stripe)
         if zz > 1.23 and abs(yy) > 0.12:
             fur = tabby*0.72
         return tuple(fur*(1-white_mix) + white*white_mix)
@@ -173,21 +178,35 @@ base.ellipsoid('nose', (-1.064, 0, 1.028), (0.017, 0.025, 0.015), base.PINK,
 for sign, side in ((1, 'left'), (-1, 'right')):
     sy = sign * 0.110
     for suffix, cx, scale, color in (
-        ('rim', -1.015, (0.023, 0.037, 0.028), base.DARK),
-        ('iris', -1.034, (0.009, 0.029, 0.023), base.GREEN),
-        ('pupil', -1.043, (0.005, 0.011, 0.020), base.DARK),
+        ('rim', -1.015, (0.023, 0.042, 0.024), base.DARK),
+        ('iris', -1.034, (0.009, 0.034, 0.019), base.GREEN),
+        ('pupil', -1.043, (0.005, 0.011, 0.018), base.DARK),
         ('glint', -1.048, (0.002, 0.004, 0.004), base.WHITE),
     ):
         base.ellipsoid(side+'_'+suffix, (cx, sy, 1.13), scale, color,
                        rings=10, sides=18)
-    base.ellipsoid(side+'_inner_ear', (-0.824, sign*0.177, 1.274),
-                   (0.014, 0.037, 0.051), (0.43, 0.29, 0.29),
+    for k in range(3):
+        u, v = k/3, (k+1)/3
+        def lid(t):
+            return (-1.043, sign*(0.069+0.080*t),
+                    1.144+0.012*np.sin(np.pi*t)-0.008*t)
+        base.tapered_segment(side+'_upper_lid_'+str(k), lid(u), lid(v),
+                             0.0033, 0.0022, (0.17, 0.15, 0.14), 6)
+    base.ellipsoid(side+'_inner_ear', (-0.858, sign*0.177, 1.274),
+                   (0.014, 0.035, 0.047), (0.43, 0.29, 0.29),
                    rings=10, sides=18)
     for i in range(3):
         base.tapered_segment(side+'_whisker_'+str(i),
                              (-0.986, sign*0.08, 1.020+i*0.015),
                              (-1.12+i*0.018, sign*0.31, 0.978+i*0.032),
                              0.0018, 0.0003, base.WHITE, 5)
+
+base.tapered_segment('philtrum', (-1.075, 0, 1.014),
+                     (-1.064, 0, 0.988), 0.0024, 0.0016, base.DARK, 6)
+for side in (-1, 1):
+    base.tapered_segment('mouth_corner_'+str(side), (-1.064, 0, 0.988),
+                         (-1.047, side*0.034, 0.984), 0.0018, 0.0003,
+                         base.DARK, 6)
 
 output = Path(__file__).with_name('doujiang_continuous.glb')
 base.glb(output)
