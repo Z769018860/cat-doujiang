@@ -19,7 +19,7 @@ PINK = (0.60, 0.36, 0.35)
 meshes = []
 
 
-def ellipsoid(name, center, radius, color, paint=None, rings=22, sides=40):
+def ellipsoid(name, center, radius, color, paint=None, rings=22, sides=36):
     """UV ellipsoid with per vertex coat coloring; paint receives normalized XYZ."""
     vertices, colors, triangles = [], [], []
     for i in range(rings + 1):
@@ -140,7 +140,7 @@ def glb(output):
     buffer = bytearray()
     views, accessors, nodes, mesh_defs = [], [], [], []
 
-    def accessor(data, component, kind, count, target, bounds=None):
+    def accessor(data, component, kind, count, target, bounds=None, normalized=False):
         while len(buffer) % 4:
             buffer.append(0)
         offset = len(buffer)
@@ -148,6 +148,8 @@ def glb(output):
         vi = len(views)
         views.append({'buffer': 0, 'byteOffset': offset, 'byteLength': len(data), 'target': target})
         ac = {'bufferView': vi, 'componentType': component, 'count': count, 'type': kind}
+        if normalized:
+            ac['normalized'] = True
         if bounds:
             ac['min'], ac['max'] = bounds
         accessors.append(ac)
@@ -159,8 +161,9 @@ def glb(output):
         bounds = ([min(p[k] for p in positions) for k in range(3)],
                   [max(p[k] for p in positions) for k in range(3)])
         pos = accessor(struct.pack('<%sf' % len(pos_flat), *pos_flat), 5126, 'VEC3', len(positions), 34962, bounds)
-        col = accessor(struct.pack('<%sf' % len(color_flat), *color_flat), 5126, 'VEC4', len(colors), 34962)
-        idx = accessor(struct.pack('<%sI' % len(indices), *indices), 5125, 'SCALAR', len(indices), 34963)
+        col = accessor(bytes(round(max(0, min(1, c)) * 255) for c in color_flat),
+                       5121, 'VEC4', len(colors), 34962, normalized=True)
+        idx = accessor(struct.pack('<%sH' % len(indices), *indices), 5123, 'SCALAR', len(indices), 34963)
         mesh_defs.append({'name': name, 'primitives': [{'attributes': {'POSITION': pos, 'COLOR_0': col},
                                                         'indices': idx, 'material': 0}]})
         nodes.append({'name': name, 'mesh': len(mesh_defs) - 1})
