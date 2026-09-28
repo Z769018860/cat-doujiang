@@ -30,20 +30,20 @@ axis = [np.arange(a, b, step, dtype=np.float32) for a, b in zip(lo, hi)]
 x, y, z = np.meshgrid(*axis, indexing='ij', sparse=True)
 
 pieces = [
-    ((0.10, 0, 0.75), (0.66, 0.285, 0.32), 0.10),  # torso
-    ((0.53, 0, 0.68), (0.31, 0.30, 0.31), 0.16),   # rounded haunches
-    ((-0.45, 0, 0.74), (0.255, 0.245, 0.33), 0.16),# chest
+    ((0.10, 0, 0.73), (0.65, 0.315, 0.37), 0.12), # fuller torso
+    ((0.53, 0, 0.67), (0.32, 0.335, 0.34), 0.17), # fuller haunches
+    ((-0.45, 0, 0.72), (0.265, 0.26, 0.34), 0.16),# chest
     ((-0.65, 0, 0.97), (0.16, 0.17, 0.24), 0.13), # neck
-    ((-0.78, 0, 1.105), (0.214, 0.208, 0.19), 0.09), # skull
+    ((-0.78, 0, 1.102), (0.221, 0.225, 0.190), 0.09), # rounded skull
     ((-0.956, 0, 1.025), (0.09, 0.118, 0.076), 0.05), # muzzle
 ]
 for sx in (-1, 1):
     for fore, px in ((True, -0.46), (False, 0.53)):
         sy = sx * (0.196 if fore else 0.202)
         pieces.extend([
-            ((px, sy, 0.48), (0.115 if fore else 0.15, 0.11, 0.26), 0.13),
-            ((px + (0.01 if fore else 0.06), sy, 0.255),
-             (0.090 if fore else 0.10, 0.084, 0.17), 0.105),
+            ((px, sy, 0.47), (0.135 if fore else 0.16, 0.12, 0.245), 0.14),
+            ((px + (0.01 if fore else 0.06), sy, 0.245),
+             (0.100 if fore else 0.11, 0.091, 0.16), 0.115),
             ((px - 0.05, sy, 0.105), (0.132, 0.095, 0.070), 0.09),
         ])
 
@@ -63,8 +63,8 @@ for i in range(13):
 for sign in (-1, 1):
     for i in range(8):
         t = i / 7
-        center = (-0.775 + 0.025*t, sign*(0.142+0.035*t), 1.232+0.140*t)
-        r = 0.074*(1-t) + 0.006
+        center = (-0.775 + 0.025*t, sign*(0.150+0.030*t), 1.225+0.112*t)
+        r = 0.072*(1-t) + 0.006
         surface = soft_union(surface, egg(x, y, z, center, (r*0.72, r, 0.041)), 0.032)
 
 vertices, faces, _, _ = marching_cubes(surface, 0, spacing=(step, step, step))
