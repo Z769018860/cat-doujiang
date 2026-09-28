@@ -16,3 +16,9 @@
 `model/build_doujiang.py` 是可复现的几何生成源文件；调整参数后重新运行会覆盖 GLB。模型初版根据用户提供的豆浆照片绘制，仅用于此桌宠项目。
 
 运行 `python model/render_preview.py` 可重新生成示意图（需 numpy 与 matplotlib）。此次增加眼部轮廓、脚趾、后腿体积和更细的背部虎斑；GLB 采用紧凑顶点颜色与索引。示意图是实际 GLB 的几何渲染，可用于识别后续需要雕刻的部位。
+
+## 连续网格版本（当前工作稿）
+
+[`model/doujiang_continuous.glb`](model/doujiang_continuous.glb) 是新版本，取代分离几何体作为后续精修起点。[三视角实模预览](model/doujiang_continuous_preview.png)。主体、头、四肢、耳朵、尾巴合并为一个连续三角网格（约 17,080 顶点、34,156 三角形）；眼、鼻、胡须仍为独立物件。`python model/build_continuous.py` 可重建（需 numpy、scikit-image），`python model/render_preview.py` 可渲染预览（另需 matplotlib）。旧版 GLB 保留作对照。
+
+目前属于**连续造型稿，仍非写实成品**：面部比例、眼睛位置、耳朵形态、爪趾与左右侧精确斑纹需要逐项人工对照照片雕刻和绘制；顶点颜色不等于照片贴图，尚无 UV、真实毛发、骨骼和动画。不要仅以网格面数判断真实感。
