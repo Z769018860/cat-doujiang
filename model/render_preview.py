@@ -9,6 +9,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+from PIL import Image
+from io import BytesIO
 
 folder = Path(__file__).parent
 source = Path(sys.argv[1]) if len(sys.argv) > 1 else folder / 'doujiang_continuous.glb'
@@ -18,17 +20,23 @@ doc = json.loads(blob[20:20 + length])
 binary = blob[28 + length:]
 views = doc['bufferViews']
 accessors = doc['accessors']
+texture_pixels = None
+if doc.get('images'):
+    image_view = views[doc['images'][0]['bufferView']]
+    start = image_view['byteOffset']
+    texture_pixels = np.asarray(Image.open(BytesIO(
+        binary[start:start + image_view['byteLength']])).convert('RGB')) / 255.0
 
 
 def read(index):
     a = accessors[index]
     view = views[a['bufferView']]
     dtype = {5126: '<f4', 5125: '<u4', 5123: '<u2', 5121: 'u1'}[a['componentType']]
-    width = {'VEC3': 3, 'VEC4': 4, 'SCALAR': 1}[a['type']]
+    width = {'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'SCALAR': 1}[a['type']]
     start = view.get('byteOffset', 0) + a.get('byteOffset', 0)
     values = np.frombuffer(binary, dtype=dtype, count=a['count'] * width,
                            offset=start).reshape(-1, width)
-    return values.astype('f4') / 255 if a.get('normalized') else values
+    return values.astype('f4') / (65535 if a['componentType'] == 5123 else 255) if a.get('normalized') else values
 
 
 fig = plt.figure(figsize=(17, 6), facecolor='#f3f0e9')
@@ -41,9 +49,16 @@ for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
         primitive = mesh['primitives'][0]
         xyz = read(primitive['attributes']['POSITION'])
         colors = read(primitive['attributes']['COLOR_0'])[:, :3]
+        if texture_pixels is not None and 'TEXCOORD_0' in primitive['attributes']:
+            uv = read(primitive['attributes']['TEXCOORD_0'])
+            pixel_x = np.clip((uv[:, 0] * (texture_pixels.shape[1]-1)).astype(int),
+                              0, texture_pixels.shape[1]-1)
+            pixel_y = np.clip(((1-uv[:, 1]) * (texture_pixels.shape[0]-1)).astype(int),
+                              0, texture_pixels.shape[0]-1)
+            colors *= texture_pixels[pixel_y, pixel_x]
         faces = read(primitive['indices']).reshape(-1, 3)
         # Subsample for a compact, repeatable inspection render.
-        step = 1 if source.stem.endswith('continuous') else max(1, len(faces) // 1800)
+        step = 1 if source.stem.endswith(('continuous', 'textured')) else max(1, len(faces) // 1800)
         faces = faces[::step]
         tris = xyz[faces]
         normal = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
@@ -64,6 +79,8 @@ for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
 fig.suptitle('Doujiang | continuous 3D surface', fontsize=19)
 fig.text(0.5, 0.035, 'Continuous sculptable mesh | coat and facial detail still need manual refinement',
          ha='center', color='#746f68', fontsize=11)
-destination = folder / ('doujiang_continuous_preview.png' if source.stem.endswith('continuous') else 'doujiang_preview.png')
+destination = folder / ('doujiang_textured_preview.png' if source.stem.endswith('textured')
+                        else 'doujiang_continuous_preview.png' if source.stem.endswith('continuous')
+                        else 'doujiang_preview.png')
 fig.savefig(destination, dpi=155, facecolor=fig.get_facecolor())
 print(destination)
