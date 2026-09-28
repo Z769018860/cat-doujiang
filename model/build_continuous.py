@@ -23,7 +23,7 @@ def egg(x, y, z, center, radius):
                     ((z-center[2])/radius[2])**2) - 1) * min(radius)
 
 
-step = 0.021
+step = 0.016
 lo = np.array([-1.21, -0.60, -0.035])
 hi = np.array([1.45, 0.60, 1.55])
 axis = [np.arange(a, b, step, dtype=np.float32) for a, b in zip(lo, hi)]
@@ -33,7 +33,7 @@ pieces = [
     ((0.10, 0, 0.73), (0.65, 0.315, 0.37), 0.12), # fuller torso
     ((0.53, 0, 0.67), (0.32, 0.335, 0.34), 0.17), # fuller haunches
     ((-0.45, 0, 0.72), (0.265, 0.26, 0.34), 0.16),# chest
-    ((-0.65, 0, 0.97), (0.16, 0.17, 0.24), 0.13), # neck
+    ((-0.63, 0, 0.94), (0.18, 0.185, 0.25), 0.15), # neck/ruff
     ((-0.78, 0, 1.102), (0.221, 0.225, 0.190), 0.09), # rounded skull
     ((-0.952, 0, 1.016), (0.091, 0.117, 0.074), 0.055), # muzzle
     ((-0.939, 0, 0.972), (0.068, 0.086, 0.043), 0.047), # chin
@@ -46,11 +46,15 @@ for sx in (-1, 1):
     for fore, px in ((True, -0.46), (False, 0.53)):
         sy = sx * (0.196 if fore else 0.202)
         pieces.extend([
-            ((px, sy, 0.47), (0.135 if fore else 0.16, 0.12, 0.245), 0.14),
-            ((px + (0.01 if fore else 0.06), sy, 0.245),
-             (0.100 if fore else 0.11, 0.091, 0.16), 0.115),
+            ((px, sy, 0.49), (0.125 if fore else 0.17, 0.115, 0.25), 0.13),
+            ((px + (0.005 if fore else 0.095), sy, 0.26),
+             (0.092 if fore else 0.112, 0.085, 0.165), 0.10),
             ((px - 0.05, sy, 0.105), (0.132, 0.095, 0.070), 0.09),
         ])
+        # Subtle paw silhouette: separate toe lobes stay attached to the paw.
+        for digit in (-1, 0, 1):
+            pieces.append(((px-0.158, sy+digit*0.051, 0.090),
+                           (0.042, 0.028, 0.039), 0.023))
 
 surface = None
 for center, radius, blend in pieces:
@@ -66,11 +70,12 @@ for i in range(13):
 
 # Ears rise from the skull, with smooth blending at their bases.
 for sign in (-1, 1):
-    for i in range(8):
-        t = i / 7
-        center = (-0.775 + 0.025*t, sign*(0.150+0.030*t), 1.225+0.112*t)
-        r = 0.072*(1-t) + 0.006
-        surface = soft_union(surface, egg(x, y, z, center, (r*0.72, r, 0.041)), 0.032)
+    for i in range(11):
+        t = i / 10
+        center = (-0.785 + 0.032*t, sign*(0.153+0.034*t), 1.220+0.142*t)
+        r = 0.079*(1-t) + 0.001
+        surface = soft_union(surface, egg(x, y, z, center,
+                                          (r*0.69, r, 0.034)), 0.018)
 
 vertices, faces, _, _ = marching_cubes(surface, 0, spacing=(step, step, step))
 vertices += lo
