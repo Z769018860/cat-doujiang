@@ -19,7 +19,7 @@ PINK = (0.60, 0.36, 0.35)
 meshes = []
 
 
-def ellipsoid(name, center, radius, color, paint=None, rings=18, sides=32):
+def ellipsoid(name, center, radius, color, paint=None, rings=22, sides=40):
     """UV ellipsoid with per vertex coat coloring; paint receives normalized XYZ."""
     vertices, colors, triangles = [], [], []
     for i in range(rings + 1):
@@ -42,15 +42,19 @@ def body_paint(p):
     x, y, z = p
     # White belly and legs; dark saddle above with a white shoulder gap.
     threshold = -0.06 + 0.09 * math.sin(5 * x + 2 * y)
-    if z < threshold or (x < -0.36 and x > -0.62):
+    if z < threshold or (-0.64 < x < -0.38 and z < 0.67):
         return WHITE
-    stripe = math.sin(29 * x + 5 * y + 4 * z)
-    return DARK if stripe > 0.70 else (LIGHT if stripe < -0.65 else TABBY)
+    # Tabby stripes taper across the visible side; edges are softened by
+    # vertex interpolation. These are hand approximations, not photo textures.
+    stripe = math.sin(35 * x + 3.5 * y + 5 * z + 1.6 * math.sin(8 * x))
+    if stripe > 0.77 and abs(y) > 0.30 and z > 0.0:
+        return DARK
+    return LIGHT if stripe < -0.60 else TABBY
 
 
 def face_paint(p):
     x, y, z = p
-    if z < 0.15 or x < -0.65 and abs(y) < 0.30 + 0.12 * z:
+    if z < -0.07 or (x < -0.18 and abs(y) < 0.27 + 0.10 * z):
         return WHITE
     if math.sin(18 * y + 8 * x) > 0.65:
         return DARK
@@ -83,28 +87,39 @@ def tapered_segment(name, start, end, r0, r1, color, sides=12):
 
 
 # Relative proportions are estimated from the supplied photographs.
-ellipsoid('body_saddle_white_belly', (0.12, 0, 0.79), (0.69, 0.30, 0.35), WHITE, body_paint)
-ellipsoid('chest_white', (-0.46, 0, 0.72), (0.34, 0.28, 0.36), WHITE)
-ellipsoid('head_tabby_white_blaze', (-0.75, 0, 1.08), (0.225, 0.22, 0.205), WHITE, face_paint)
+ellipsoid('body_saddle_white_belly', (0.12, 0, 0.77), (0.68, 0.33, 0.36), WHITE, body_paint)
+ellipsoid('rear_haunches', (0.55, 0, 0.70), (0.32, 0.32, 0.33), WHITE, body_paint)
+ellipsoid('chest_white', (-0.45, 0, 0.73), (0.25, 0.245, 0.30), WHITE)
+ellipsoid('head_tabby_white_blaze', (-0.77, 0, 1.115), (0.225, 0.225, 0.202), WHITE, face_paint)
+ellipsoid('chin_white', (-0.95, 0, 0.974), (0.11, 0.13, 0.077), WHITE)
 ellipsoid('muzzle_left', (-0.955, 0.075, 0.995), (0.095, 0.090, 0.075), WHITE)
 ellipsoid('muzzle_right', (-0.955, -0.075, 0.995), (0.095, 0.090, 0.075), WHITE)
 ellipsoid('pink_dark_nose', (-1.035, 0, 1.035), (0.040, 0.050, 0.029), PINK)
 
 for sign, side in ((1, 'left'), (-1, 'right')):
     y = sign * 0.148
-    ellipsoid('iris_' + side, (-0.942, y, 1.113), (0.018, 0.048, 0.052), GREEN)
-    ellipsoid('pupil_' + side, (-0.959, y, 1.113), (0.009, 0.016, 0.041), DARK)
+    ellipsoid('eye_dark_rim_' + side, (-0.957, y, 1.131), (0.012, 0.044, 0.043), DARK)
+    ellipsoid('iris_' + side, (-0.968, y, 1.131), (0.009, 0.035, 0.036), GREEN)
+    ellipsoid('pupil_' + side, (-0.977, y, 1.131), (0.005, 0.012, 0.031), DARK)
+    ellipsoid('eye_glint_' + side, (-0.983, y - sign * 0.010, 1.147), (0.003, 0.006, 0.006), WHITE)
     tapered_segment('ear_outer_' + side, (-0.77, sign * 0.144, 1.22),
                     (-0.73, sign * 0.20, 1.42), 0.092, 0.006, TABBY)
     tapered_segment('ear_inner_' + side, (-0.811, sign * 0.151, 1.253),
                     (-0.773, sign * 0.193, 1.397), 0.049, 0.003, EAR)
-    for x, label in ((-0.46, 'front'), (0.55, 'hind')):
+    for x, label in ((-0.46, 'front'), (0.56, 'hind')):
         yy = sign * 0.225
         top = 0.68 if x < 0 else 0.72
-        tapered_segment(label + '_leg_' + side, (x, yy, top), (x + 0.03, yy, 0.15),
-                        0.110 if x < 0 else 0.145, 0.077, WHITE)
+        if x > 0:
+            ellipsoid('hind_thigh_' + side, (x - 0.04, yy * 0.9, 0.56),
+                      (0.18, 0.135, 0.20), WHITE)
+        ellipsoid(label + '_leg_' + side, (x, yy, 0.39),
+                  (0.102 if x < 0 else 0.115, 0.094, 0.29), WHITE)
         ellipsoid(label + '_white_paw_' + side, (x - 0.045, yy, 0.105),
                   (0.130, 0.086, 0.064), WHITE)
+        for digit in range(3):
+            ellipsoid('%s_paw_%s_toe_%d' % (label, side, digit),
+                      (x - 0.134, yy + (digit - 1) * 0.045, 0.093),
+                      (0.039, 0.026, 0.034), WHITE, rings=12, sides=18)
     for n in range(3):
         # A few deliberately restrained whiskers, which remain separate objects.
         tapered_segment('whisker_%s_%d' % (side, n),
