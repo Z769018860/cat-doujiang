@@ -52,8 +52,12 @@ for slot, (label, elevation, azimuth) in enumerate((('Face', 13, 180),
         rgb = np.clip(colors[faces].mean(axis=1) * light[:, None], 0, 1)
         ax.add_collection3d(Poly3DCollection(tris, facecolors=rgb, linewidths=0,
                                               edgecolors='none', zsort='average'))
-    ax.set(xlim=(-1.2, 1.48), ylim=(-0.75, 0.75), zlim=(0, 1.55))
-    ax.set_box_aspect((2.68, 1.5, 1.55), zoom=1.35)
+    if slot == 1:
+        ax.set(xlim=(-1.12, -0.49), ylim=(-0.31, 0.31), zlim=(0.90, 1.54))
+        ax.set_box_aspect((0.63, 0.62, 0.64), zoom=1.35)
+    else:
+        ax.set(xlim=(-1.2, 1.48), ylim=(-0.75, 0.75), zlim=(0, 1.55))
+        ax.set_box_aspect((2.68, 1.5, 1.55), zoom=1.35)
     ax.view_init(elev=elevation, azim=azimuth)
     ax.set_axis_off()
     ax.set_title(label, fontsize=17, pad=0)
