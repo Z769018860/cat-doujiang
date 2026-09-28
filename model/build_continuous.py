@@ -99,19 +99,30 @@ def coat(p):
             fur = tabby*0.72
         return tuple(fur*(1-white_mix) + white*white_mix)
 
-    # Neck and chest are white. The shoulder tabby patch is separate from
-    # the main saddle by a distinct white strip visible in both side photos.
-    shoulder = smooth(-0.63, -0.56, xx) * (1-smooth(-0.405, -0.33, xx))
-    shoulder *= smooth(0.77, 0.92, zz) * smooth(0.10, 0.19, abs(yy))
-    shoulder *= (1-smooth(1.02, 1.12, zz))
-    saddle = smooth(-0.255, -0.17, xx) * (1-smooth(0.57, 0.73, xx))
-    saddle *= smooth(0.73 + 0.03*np.sin(11*xx + 6*yy), 0.85, zz)
+    # Shoulder island: a tapered oval, descending towards the visible outer
+    # foreleg. The curved white collar behind it separates it from the saddle.
+    shoulder_cx = -0.49 + 0.028*np.sin(9*zz + 5*yy)
+    shoulder_cz = 0.995 - 0.040*np.sin(8*xx)
+    shoulder_distance = ((xx-shoulder_cx)/0.175)**2 + ((zz-shoulder_cz)/0.225)**2
+    shoulder = 1-smooth(0.70, 1.08, shoulder_distance)
+    shoulder *= smooth(0.10, 0.175, abs(yy))
+
+    # Main saddle observed in the side views: starts after the collar, curves
+    # across the shoulder and bulges lower in the middle, then climbs back to
+    # leave a broad white hindquarter. It is not a rectangular x/z threshold.
+    front = -0.205 + 0.037*np.sin(9*zz + 2*yy)
+    rear = 0.59
+    rear -= 0.11*(1-smooth(0.67, 0.91, zz))
+    lower = 0.73 - 0.075*np.exp(-((xx-0.16)/0.32)**2)
+    lower += 0.10*smooth(0.39, 0.66, xx)
+    lower += 0.018*np.sin(17*xx+7*yy)
+    saddle = smooth(front-0.035, front+0.045, xx)
+    saddle *= 1-smooth(rear-0.06, rear+0.06, xx)
+    saddle *= smooth(lower-0.035, lower+0.055, zz)
     saddle = max(saddle, shoulder)
-    if zz < 0.6:
-        saddle = 0
-    wave = np.sin(35*xx + 4*yy + 3.5*zz + 0.7*np.sin(10*xx))
-    stripe = smooth(0.42, 0.76, wave)
-    fur = tabby*(1-0.38*stripe) + shadow*(0.38*stripe)
+    wave = np.sin(36*xx + 6*yy + 4*zz + 0.8*np.sin(9*xx))
+    stripe = smooth(0.43, 0.82, wave)
+    fur = tabby*(1-0.28*stripe) + shadow*(0.28*stripe)
     # Reduced broad striping on the shoulder patch, stronger on torso.
     return tuple(white*(1-saddle) + fur*saddle)
 
