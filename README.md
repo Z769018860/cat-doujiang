@@ -32,3 +32,11 @@
 以上区域已映射到连续网格的顶点颜色，并用正脸特写、侧面和背部视图复核。白色间隔、斑块边界及眼睛位置仍是目视估计，不能称为精确照片贴图；光照与透视差异也会影响颜色判断。下一步需要 Blender 中的 UV、逐侧手绘贴图和照片对照雕刻。
 
 2026-09-28 花纹边界复核：把原本侧面的方形肩斑改为向前腿收窄的弧形岛状斑；白色肩带调整为非直线；背部大斑下缘在腹侧中段下降、臀部回升，尾部保留深色。该结果是根据照片可见轮廓手动定义的空间色区，**尚非照片投影/UV 贴图**。单视角拍摄透视与姿态不同，另一侧没有同条件正交照片，所以仍可能有位置偏差。
+
+## 可编辑双侧 UV 贴图（2026-09-28）
+
+- [`model/doujiang_textured.glb`](model/doujiang_textured.glb)：连续网格与嵌入式 PNG 贴图；眼、鼻、胡须仍使用独立顶点颜色。
+- [`model/doujiang_coat_atlas.png`](model/doujiang_coat_atlas.png)：256×256 色图，左半对应模型 +Y 侧，右半对应 -Y 侧；可在 Blender 的纹理绘制中逐侧精修。[模型预览](model/doujiang_textured_preview.png)。
+- 生成顺序：`python model/build_continuous.py`，再运行 `python model/build_texture.py`。后者需要 Pillow、numpy 和 scikit-image；`render_preview.py model/doujiang_textured.glb` 需 matplotlib。
+
+纹理是根据照片中可辨认斑块重绘的基底，**不是照片本身投影，也不是写实皮毛材质**。为了保持正面白鼻梁，头部仍由顶点颜色控制；身体顶部沿左右纹理分区的接缝、肩斑弧度和纹理分辨率都需要后续 UV 重展开及手工修整。照片未覆盖的另一侧细纹不能凭空确认。
