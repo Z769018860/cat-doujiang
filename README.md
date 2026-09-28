@@ -1,9 +1,6 @@
-# cat-doujiang
-给去世豆浆做的纪念
+# 豆浆桌宠：3D 模型初版
 
-## 3D 模型初版
-
-照片参考制作的第一版 **比例与花纹占位模型**，见 [`model/doujiang_blockout.glb`](model/doujiang_blockout.glb)。该文件可以直接导入 Blender、Godot 或支持 glTF 2.0 的查看器；共 53 个可单独编辑的网格对象。[查看两视角示意图](model/doujiang_preview.png)。运行 `python model/build_doujiang.py` 可重新生成，脚本仅依赖 Python 标准库。
+照片参考制作的第一版 **比例与花纹占位模型**，见 [`model/doujiang_blockout.glb`](model/doujiang_blockout.glb)。该文件可以直接导入 Blender、Godot 或支持 glTF 2.0 的查看器；共 33 个可单独编辑的网格对象。运行 `python model/build_doujiang.py` 可重新生成，脚本仅依赖 Python 标准库。
 
 当前包含白色胸腹和四爪、棕灰色虎斑背部、肩部白色间隔、面部白色鼻梁、绿色眼睛、粉色鼻子、耳朵和环纹尾巴。模型坐标为 Z 向上，头朝 -X。体形与毛色边界按照现有照片估计，实际体尺尚未测量。
 
@@ -15,30 +12,8 @@
 
 `model/build_doujiang.py` 是可复现的几何生成源文件；调整参数后重新运行会覆盖 GLB。模型初版根据用户提供的豆浆照片绘制，仅用于此桌宠项目。
 
-运行 `python model/render_preview.py` 可重新生成示意图（需 numpy 与 matplotlib）。此次增加眼部轮廓、脚趾、后腿体积和更细的背部虎斑；GLB 采用紧凑顶点颜色与索引。示意图是实际 GLB 的几何渲染，可用于识别后续需要雕刻的部位。
+## 连续表面精修版（当前）
 
-## 连续网格版本（当前工作稿）
+当前推荐查看 [`model/doujiang_textured.glb`](model/doujiang_textured.glb) 和[三视角预览](model/doujiang_textured_preview.png)。`model/build_continuous.py` 生成连续的身体、头、耳、腿及尾巴，独立保留眼睛、鼻子、触须与稀疏的短毛束；`model/build_texture.py` 生成 512×512 可编辑的左右毛色图集，并把它嵌入 GLB。运行方式：`python model/build_texture.py`，然后 `python model/render_preview.py model/doujiang_textured.glb`。依赖 numpy、scikit-image、Pillow 和 matplotlib（仅预览）。
 
-[`model/doujiang_continuous.glb`](model/doujiang_continuous.glb) 是新版本，取代分离几何体作为后续精修起点。[三视角实模预览](model/doujiang_continuous_preview.png)。主体、头、四肢、耳朵、尾巴合并为一个连续三角网格（约 17,080 顶点、34,156 三角形）；眼、鼻、胡须仍为独立物件。`python model/build_continuous.py` 可重建（需 numpy、scikit-image），`python model/render_preview.py` 可渲染预览（另需 matplotlib）。旧版 GLB 保留作对照。
-
-目前属于**连续造型稿，仍非写实成品**：面部比例、眼睛位置、耳朵形态、爪趾与左右侧精确斑纹需要逐项人工对照照片雕刻和绘制；顶点颜色不等于照片贴图，尚无 UV、真实毛发、骨骼和动画。不要仅以网格面数判断真实感。
-
-### 照片花纹对照（2026-09-28）
-
-- 正面照片：额头深色虎斑，鼻梁细白斑延伸至白色口鼻，眼周深色、下颌白色；鼻子粉色偏暗，绿眼。
-- 侧面照片（image(8)、image(10)）：颈胸白色；肩侧独立深斑；肩后有明显白色竖带；躯干上方大片深色虎斑；后腿及腹部主要为白色。
-- 俯视照片（image(20260928-043052)）：背脊深色区域与肩带白色间隔；尾巴环纹并有深色尾尖。
-
-以上区域已映射到连续网格的顶点颜色，并用正脸特写、侧面和背部视图复核。白色间隔、斑块边界及眼睛位置仍是目视估计，不能称为精确照片贴图；光照与透视差异也会影响颜色判断。下一步需要 Blender 中的 UV、逐侧手绘贴图和照片对照雕刻。
-
-2026-09-28 花纹边界复核：把原本侧面的方形肩斑改为向前腿收窄的弧形岛状斑；白色肩带调整为非直线；背部大斑下缘在腹侧中段下降、臀部回升，尾部保留深色。该结果是根据照片可见轮廓手动定义的空间色区，**尚非照片投影/UV 贴图**。单视角拍摄透视与姿态不同，另一侧没有同条件正交照片，所以仍可能有位置偏差。
-
-## 可编辑双侧 UV 贴图（2026-09-28）
-
-- [`model/doujiang_textured.glb`](model/doujiang_textured.glb)：连续网格与嵌入式 PNG 贴图；眼、鼻、胡须仍使用独立顶点颜色。
-- [`model/doujiang_coat_atlas.png`](model/doujiang_coat_atlas.png)：256×256 色图，左半对应模型 +Y 侧，右半对应 -Y 侧；可在 Blender 的纹理绘制中逐侧精修。[模型预览](model/doujiang_textured_preview.png)。
-- 生成顺序：`python model/build_continuous.py`，再运行 `python model/build_texture.py`。后者需要 Pillow、numpy 和 scikit-image；`render_preview.py model/doujiang_textured.glb` 需 matplotlib。
-
-纹理是根据照片中可辨认斑块重绘的基底，**不是照片本身投影，也不是写实皮毛材质**。为了保持正面白鼻梁，头部仍由顶点颜色控制；身体顶部沿左右纹理分区的接缝、肩斑弧度和纹理分辨率都需要后续 UV 重展开及手工修整。照片未覆盖的另一侧细纹不能凭空确认。
-
-2026-09-28 外形校正：对照站立侧照和近景正面照，增厚胸腹与臀部、加宽头部、缩短耳尖，并让四肢更粗短。`doujiang_continuous.glb` 与贴图版 `doujiang_textured.glb` 已同步重建。三视角检查中整体仍明显偏卡通，鼻眼结构、毛流及透视匹配均需人工雕刻校正；现有照片并不是同姿态正交摄影，不能从中获得精确体尺或自动完成写实重建。
+按照片调整了圆润脸颊、分开的口鼻与下巴，收窄突出眼部，修正肩部独立深色斑块、其后方白色间隔及背部虎斑位置。短毛由单独网格表达，可在小尺寸桌宠中隐藏。**此版仍是手工近似，不是照片扫描的写实资产**：面部器官、毛流和被遮挡的一侧都需要在 Blender 中逐面雕刻与贴图；模型尚未拓扑优化、绑定骨骼或制作动作。上文的“当前精度与下一步”描述的是旧版 blockout，勿将它当作现版结构。

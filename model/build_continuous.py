@@ -35,9 +35,14 @@ pieces = [
     ((-0.45, 0, 0.72), (0.265, 0.26, 0.34), 0.16),# chest
     ((-0.65, 0, 0.97), (0.16, 0.17, 0.24), 0.13), # neck
     ((-0.78, 0, 1.102), (0.221, 0.225, 0.190), 0.09), # rounded skull
-    ((-0.956, 0, 1.025), (0.09, 0.118, 0.076), 0.05), # muzzle
+    ((-0.952, 0, 1.016), (0.091, 0.117, 0.074), 0.055), # muzzle
+    ((-0.939, 0, 0.972), (0.068, 0.086, 0.043), 0.047), # chin
 ]
 for sx in (-1, 1):
+    pieces.extend([
+        ((-0.856, sx*0.142, 1.066), (0.132, 0.103, 0.105), 0.10), # cheek pads
+        ((-0.987, sx*0.046, 1.029), (0.060, 0.064, 0.044), 0.048), # split muzzle
+    ])
     for fore, px in ((True, -0.46), (False, 0.53)):
         sy = sx * (0.196 if fore else 0.202)
         pieces.extend([
@@ -91,9 +96,9 @@ def coat(p):
     # White muzzle, broad lower cheeks and the narrow central white blaze.
     if xx < -0.69:
         blaze = 1 - smooth(0.052, 0.095, abs(yy) + 0.05*(zz-1.12))
-        cheek = 1 - smooth(1.055, 1.12, zz + 0.018*np.sin(30*yy))
+        cheek = 1 - smooth(1.075, 1.14, zz + 0.018*np.sin(30*yy))
         white_mix = max(blaze, cheek)
-        forehead_stripe = 0.5 + 0.5*np.cos(45*yy + 9*xx)
+        forehead_stripe = 0.5 + 0.5*np.cos(57*yy + 9*xx)
         fur = tabby*(1-0.42*forehead_stripe) + shadow*(0.42*forehead_stripe)
         if zz > 1.23 and abs(yy) > 0.12:
             fur = tabby*0.72
@@ -132,8 +137,38 @@ base.meshes.append(('continuous_body_head_legs_tail_ears',
                     vertices.tolist(), [coat(p) for p in vertices],
                     faces.astype('int32').flatten().tolist()))
 
+# Sparse short wisps follow the mesh surface. Kept in a separate mesh so a
+# desktop renderer can omit them at small screen sizes without changing coat.
+rng = np.random.default_rng(2781)
+acc = np.zeros_like(vertices)
+tri = vertices[faces]
+np.add.at(acc, faces[:, 0], np.cross(tri[:, 1]-tri[:, 0], tri[:, 2]-tri[:, 0]))
+np.add.at(acc, faces[:, 1], np.cross(tri[:, 1]-tri[:, 0], tri[:, 2]-tri[:, 0]))
+np.add.at(acc, faces[:, 2], np.cross(tri[:, 1]-tri[:, 0], tri[:, 2]-tri[:, 0]))
+acc /= np.maximum(np.linalg.norm(acc, axis=1, keepdims=True), 1e-9)
+fur_positions, fur_colors, fur_indices = [], [], []
+for idx in rng.choice(len(vertices), size=2300, replace=False):
+    p, normal = vertices[idx], acc[idx]
+    if p[2] < 0.14 or p[0] < -0.69:
+        continue
+    direction = np.array((-0.55, 0.11*np.sign(p[1]), -0.82))
+    direction -= normal * np.dot(direction, normal)
+    direction /= max(np.linalg.norm(direction), 1e-8)
+    width = np.cross(normal, direction)
+    width /= max(np.linalg.norm(width), 1e-8)
+    length = rng.uniform(0.008, 0.018)
+    root = p + normal*0.002
+    start = len(fur_positions)
+    fur_positions.extend((root-width*0.0007, root+width*0.0007,
+                          root+direction*length+normal*0.004))
+    color = np.asarray(coat(p)) * rng.uniform(0.89, 1.12)
+    fur_colors.extend([np.clip(color, 0, 1).tolist()]*3)
+    fur_indices.extend((start, start+1, start+2))
+base.meshes.append(('short_fur_wisps', np.asarray(fur_positions).tolist(),
+                    fur_colors, fur_indices))
+
 # Separate surfaces intentionally retained for the eyes, nose and fine whiskers.
-base.ellipsoid('nose', (-1.035, 0, 1.028), (0.019, 0.027, 0.016), base.PINK,
+base.ellipsoid('nose', (-1.064, 0, 1.028), (0.017, 0.025, 0.015), base.PINK,
                rings=10, sides=18)
 for sign, side in ((1, 'left'), (-1, 'right')):
     sy = sign * 0.110

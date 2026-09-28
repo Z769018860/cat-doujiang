@@ -9,7 +9,7 @@ from PIL import Image
 import build_continuous as sculpt
 
 folder = Path(__file__).parent
-size = 256
+size = 512
 rng = np.random.default_rng(1999)
 atlas = np.zeros((size, size, 3), dtype=np.float32)
 
@@ -25,8 +25,12 @@ for side in (0, 1):
                                                      else sculpt.coat((xx, yy, zz)))
 
 # Low amplitude fiber variation adds scale without moving the patch edges.
-grain = rng.normal(0, 0.009, (size, size))
-grain += 0.006 * np.sin(np.arange(size)[None, :] * 2.4 +
+# Short, downward slanting strands create a fine coat signal at desktop scale.
+# Noise is kept mild to preserve the boundaries traced in the side photographs.
+flecks = rng.normal(0, 0.020, (size, size))
+grain = (flecks + np.roll(flecks, 1, axis=0) * 0.8 +
+         np.roll(flecks, 2, axis=0) * 0.45) / 2.25
+grain += 0.005 * np.sin(np.arange(size)[None, :] * 2.4 +
                         np.arange(size)[:, None] * 0.25)
 atlas = np.clip(atlas + grain[..., None], 0, 1)
 image = Image.fromarray((atlas * 255).astype('uint8'), 'RGB')
