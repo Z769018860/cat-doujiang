@@ -136,7 +136,7 @@ for k in range(len(tail_points) - 1):
 ellipsoid('tail_dark_tip', tail_points[-1], (0.060, 0.052, 0.053), DARK)
 
 
-def glb(output):
+def glb(output, texture_path=None):
     buffer = bytearray()
     views, accessors, nodes, mesh_defs = [], [], [], []
 
@@ -157,23 +157,57 @@ def glb(output):
 
     for name, positions, colors, indices in meshes:
         pos_flat = [v for point in positions for v in point]
-        color_flat = [v for rgb in colors for v in (*rgb, 1.0)]
+        textured = bool(texture_path and name == 'continuous_body_head_legs_tail_ears')
+        color_flat = [v for rgb, p in zip(colors, positions)
+                      for v in (*((rgb if p[0] < -0.67 else (1.0, 1.0, 1.0))
+                                  if textured else rgb), 1.0)]
         bounds = ([min(p[k] for p in positions) for k in range(3)],
                   [max(p[k] for p in positions) for k in range(3)])
         pos = accessor(struct.pack('<%sf' % len(pos_flat), *pos_flat), 5126, 'VEC3', len(positions), 34962, bounds)
         col = accessor(bytes(round(max(0, min(1, c)) * 255) for c in color_flat),
                        5121, 'VEC4', len(colors), 34962, normalized=True)
         idx = accessor(struct.pack('<%sH' % len(indices), *indices), 5123, 'SCALAR', len(indices), 34963)
-        mesh_defs.append({'name': name, 'primitives': [{'attributes': {'POSITION': pos, 'COLOR_0': col},
-                                                        'indices': idx, 'material': 0}]})
+        attributes = {'POSITION': pos, 'COLOR_0': col}
+        if textured:
+            # Two editable atlas halves, one per photographed side. glTF UV V
+            # runs upward, whereas PNG scanlines run downward.
+            uv = []
+            for xx, yy, zz in positions:
+                u = (xx + 1.21) / 2.66
+                u = 0.5 * max(0, min(1, u)) + (0.5 if yy < 0 else 0)
+                v = max(0, min(1, (zz + 0.035) / 1.585))
+                uv.extend((round(u * 65535), round(v * 65535)))
+            tex = accessor(struct.pack('<%sH' % len(uv), *uv), 5123, 'VEC2',
+                           len(positions), 34962, normalized=True)
+            attributes['TEXCOORD_0'] = tex
+        mesh_defs.append({'name': name, 'primitives': [{'attributes': attributes,
+                                                        'indices': idx,
+                                                        'material': 0 if textured else (1 if texture_path else 0)}]})
         nodes.append({'name': name, 'mesh': len(mesh_defs) - 1})
+    material = {'name': 'coat_texture' if texture_path else 'vertex_coat',
+                'pbrMetallicRoughness': {'baseColorFactor': [1, 1, 1, 1],
+                                         'metallicFactor': 0, 'roughnessFactor': 0.9},
+                'doubleSided': True}
+    if texture_path:
+        image_bytes = texture_path.read_bytes()
+        while len(buffer) % 4:
+            buffer.append(0)
+        image_view = len(views)
+        views.append({'buffer': 0, 'byteOffset': len(buffer),
+                      'byteLength': len(image_bytes)})
+        buffer.extend(image_bytes)
+        material['pbrMetallicRoughness']['baseColorTexture'] = {'index': 0}
     doc = {'asset': {'version': '2.0', 'generator': 'cat-doujiang procedural blockout'},
            'scene': 0, 'scenes': [{'nodes': list(range(len(nodes)))}], 'nodes': nodes,
            'meshes': mesh_defs, 'buffers': [{'byteLength': len(buffer)}],
            'bufferViews': views, 'accessors': accessors,
-           'materials': [{'name': 'vertex_coat', 'pbrMetallicRoughness': {
-               'baseColorFactor': [1, 1, 1, 1], 'metallicFactor': 0, 'roughnessFactor': 0.9},
-               'doubleSided': True}]}
+           'materials': [material]}
+    if texture_path:
+        doc['materials'].append({'name': 'facial_details', 'pbrMetallicRoughness': {
+            'baseColorFactor': [1, 1, 1, 1], 'metallicFactor': 0,
+            'roughnessFactor': 0.8}, 'doubleSided': True})
+        doc.update(images=[{'bufferView': image_view, 'mimeType': 'image/png'}],
+                   textures=[{'source': 0}])
     js = json.dumps(doc, separators=(',', ':')).encode('utf8')
     js += b' ' * ((-len(js)) % 4)
     buffer.extend(b'\0' * ((-len(buffer)) % 4))
